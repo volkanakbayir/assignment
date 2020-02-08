@@ -47,7 +47,9 @@ namespace FishMarket
             // Add your own services here.
             services.AddScoped<AccountService>();
             services.AddScoped<FishMarketService>();
+            services.AddScoped<FishSpeciesService>();
             services.AddScoped<StockRepository>();
+            services.AddScoped<SpeciesRepository>();
 
             return services.BuildServiceProvider();
         }

@@ -29,7 +29,7 @@
     "ignore-loader": "0.1.2",
     "mini-css-extract-plugin": "0.7.0",
     "node-noop": "1.0.0",
-    "node-sass": "4.12.0",
+    "node-sass": "^4.12.0",
     "optimize-css-assets-webpack-plugin": "5.0.1",
     "react-dev-utils": "9.0.1",
     "react-hot-loader": "4.10.0",
@@ -75,7 +75,7 @@
     "redux-thunk": "2.3.0"
   },
   "scripts": {
-    "build:dev": "node build.before.js --mode=development && node ./node_modules/webpack/bin/webpack.js --config webpack.config.vendor.js && node ./node_modules/webpack/bin/webpack.js --config webpack.config.js",
-    "build:prod": "node build.before.js --mode=development && node ./node_modules/webpack/bin/webpack.js --config webpack.config.vendor.js --env.prod=true && node ./node_modules/webpack/bin/webpack.js --config webpack.config.js --env.prod=true"
+    "build:dev": "node build.before.js --mode=development && node ./node_modules/webpack/bin/webpack.js --config webpack.config.vendor.js && node ./node_modules/webpack/bin/webpack.js  --watch --config webpack.config.js",
+    "build:prod": "node build.before.js --mode=production && node ./node_modules/webpack/bin/webpack.js --config webpack.config.vendor.js --env.prod=true && node ./node_modules/webpack/bin/webpack.js --config webpack.config.js --env.prod=true"
   }
 }

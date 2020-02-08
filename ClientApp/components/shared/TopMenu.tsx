@@ -28,7 +28,7 @@ class TopMenu extends React.Component<{}, { logoutAction: boolean }> {
     var collapse = new Collapse(this.elCollapseButton);
   }
 
-  componentDidUpdate() { }
+  componentDidUpdate() {}
 
   render() {
     if (this.state.logoutAction) return <Redirect to="/login" />;
@@ -63,6 +63,11 @@ class TopMenu extends React.Component<{}, { logoutAction: boolean }> {
               <li>
                 <NavLink exact to={"/"} activeClassName="active">
                   Market
+                </NavLink>
+              </li>
+              <li>
+                <NavLink exact to={"/species"} activeClassName="active">
+                  Fish Species
                 </NavLink>
               </li>
               <li className="dropdown">

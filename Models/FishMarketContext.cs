@@ -15,25 +15,25 @@ namespace FishMarket.Repositories
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<SpecieModel>().HasData(new SpecieModel
+            modelBuilder.Entity<SpeciesModel>().HasData(new SpeciesModel
             {
                 Id = 1,
                 Name = "Seabass",
                 ImageSrc = "https://media.istockphoto.com/photos/three-fresh-seabass-fish-on-plate-picture-id466288735"
             },
-           new SpecieModel
+           new SpeciesModel
            {
                Id = 2,
                Name = "Perch",
                ImageSrc = "https://media.istockphoto.com/photos/three-fresh-seabass-fish-on-plate-picture-id466288735"
            },
-           new SpecieModel
+           new SpeciesModel
            {
                Id = 3,
                Name = "Tuna",
                ImageSrc = "https://5.imimg.com/data5/YA/LX/MY-8948116/tuna-fish-500x500.jpg"
            },
-           new SpecieModel
+           new SpeciesModel
            {
                Id = 4,
                Name = "Kefal",
@@ -68,7 +68,7 @@ namespace FishMarket.Repositories
             });
         }
 
-        public DbSet<SpecieModel> Species { get; set; }
+        public DbSet<SpeciesModel> Species { get; set; }
         public DbSet<FishStockModel> FishStocks { get; set; }
     }
 }

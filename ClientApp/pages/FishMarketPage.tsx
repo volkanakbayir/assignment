@@ -2,7 +2,7 @@
 import * as React from "react";
 import { Helmet } from "react-helmet";
 import { RouteComponentProps, withRouter } from "react-router";
-import { ApplicationState, reducers } from "@Store/index";
+import { ApplicationState } from "@Store/index";
 import { connect } from "react-redux";
 import { PagingBar } from "@Components/shared/PagingBar";
 import Loader from "@Components/shared/Loader";
@@ -14,12 +14,17 @@ import AwesomeDebouncePromise from "awesome-debounce-promise";
 import OrderEditor from "@Components/fishMarket/OrderEditor";
 import { getPromiseFromAction } from "@Utils";
 import { IOrderModel } from "@Models/IOrderModel";
+import { TopActionBar } from "@Components/shared/topActionBar";
+import { StockRow } from "@Components/fishMarket/stockRow";
+import { Ui } from "@Ui";
 
 type Props = RouteComponentProps<{}> &
   typeof FishStore.actionsCreators &
-  FishStore.IState;
+  FishStore.IState &
+  Function;
 
 interface IState {
+  editingOrder: IOrderModel;
   searchTerm: string;
   pageNum: number;
   limitPerPage: number;
@@ -33,12 +38,15 @@ class FishMarketPage extends React.Component<Props, IState> {
 
   private orderEditorAdd: OrderEditor;
 
-  private debouncedSearch: (term: string) => void;
+  private debouncedSearch = AwesomeDebouncePromise(() => {
+    this.getPagedData();
+  }, 500);
 
   constructor(props: Props) {
     super(props);
 
     this.state = {
+      editingOrder: {} as IOrderModel,
       searchTerm: "",
       pageNum: 1,
       limitPerPage: 5,
@@ -47,47 +55,97 @@ class FishMarketPage extends React.Component<Props, IState> {
   }
 
   componentWillMount() {
-    this.props.search("");
+    this.props.loadSpecies();
+    this.getPagedData();
   }
 
-  componentWillUnmount() {
-    if (this.elModalAdd) {
-      this.elModalAdd.hide();
-    }
+  getPagedData() {
+    this.props.search(
+      this.state.searchTerm,
+      this.state.limitPerPage,
+      this.state.rowOffset
+    );
   }
 
   @bind
   onChangeSearchInput(e: React.ChangeEvent<HTMLInputElement>) {
-    var val = e.currentTarget.value;
-    this.debouncedSearch(val);
-    this.pagingBar.setFirstPage();
+    var val = e.target.value;
+
+    this.setState(
+      {
+        searchTerm: val,
+        pageNum: 1
+      },
+      () => {
+        this.debouncedSearch();
+      }
+    );
   }
 
   @bind
   onClickShowAddModal(e: React.MouseEvent<HTMLButtonElement>) {
-    this.elModalAdd.show();
+    this.setState(
+      {
+        editingOrder: {} as IOrderModel
+      },
+      () => {
+        this.elModalAdd.show();
+      }
+    );
   }
 
   @bind
   onChangePage(pageNum: number): void {
     let rowOffset = Math.ceil((pageNum - 1) * this.state.limitPerPage);
-    this.setState({ pageNum, rowOffset });
+    this.setState({ pageNum, rowOffset }, () => {
+      this.getPagedData();
+    });
+  }
+
+  @bind
+  onBuyStock(stock: IStockModel) {
+    this.setState(
+      {
+        editingOrder: {
+          specie: stock.specie,
+          type: "buy"
+        } as IOrderModel
+      },
+      () => {
+        this.elModalAdd.show();
+      }
+    );
+  }
+
+  @bind
+  onSellStock(stock: IStockModel) {
+    this.setState(
+      {
+        editingOrder: {
+          specie: stock.specie,
+          type: "sell"
+        } as IOrderModel
+      },
+      () => {
+        this.elModalAdd.show();
+      }
+    );
   }
 
   @bind
   renderRows(data: IStockModel[]) {
-    return data
-      .slice(
-        this.state.rowOffset,
-        this.state.rowOffset + this.state.limitPerPage
-      )
-      .map(stock => <StockRow key={stock.id} stock={stock} />);
+    return data.map(stock => (
+      <StockRow
+        key={stock.id}
+        stock={stock}
+        onBuy={this.onBuyStock}
+        onSell={this.onSellStock}
+      />
+    ));
   }
 
   @bind
-  async onClickAddNewOrder__saveBtn(
-    e: React.MouseEvent<HTMLButtonElement>
-  ) {
+  async onClickAddNewOrder__saveBtn(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
 
     if (!this.orderEditorAdd.elForm.isValid()) {
@@ -105,13 +163,29 @@ class FishMarketPage extends React.Component<Props, IState> {
     const call =
       order.type === "buy" ? this.props.addBuyOrder : this.props.addSellOrder;
 
+      // handled at server sided
+    // if (order.type === "buy") {      
+    //   const buyOrder = order as IBuyOrderModel;
+    //   const stock = this.props.stock.find(
+    //     d => d.specie.id === buyOrder.specie.id
+    //   );
+    //   if (!stock) {
+    //     Ui.showErrors(`There aren't any stock for ${buyOrder.specie.name} right now.`);
+    //     return;
+    //   }
+
+    //   if (stock.quantity < buyOrder.quantity) {
+    //     Ui.showErrors(`There aren't enough stock for ${buyOrder.specie.name} to complete this buy order.`);
+    //     return;
+    //   }
+    // }
+
     const result = await getPromiseFromAction(call(order as any));
 
     if (!result.hasErrors) {
-      this.pagingBar.setLastPage();
-      this.elModalAdd.hide();
+      this.elModalAdd.hide(); 
     } else {
-      alert(result.errors);
+      Ui.showErrors(...result.errors);
     }
   }
 
@@ -124,54 +198,21 @@ class FishMarketPage extends React.Component<Props, IState> {
 
         <Loader show={this.props.indicators.operationLoading} />
 
-        <div className="panel panel-default">
-          <div className="panel-body row">
-            <div className="col-sm-2">
-              <button
-                className="btn btn-primary"
-                onClick={this.onClickShowAddModal}
-              >
-                New Order
-              </button>
-            </div>
-            <div className="col-sm-10">
-              <input
-                type="text"
-                className="form-control"
-                defaultValue={""}
-                onChange={this.onChangeSearchInput}
-                placeholder={"Search for fish..."}
-              />
-            </div>
-          </div>
-        </div>
+        <TopActionBar
+          onActionButtonClick={this.onClickShowAddModal}
+          onSearchChange={this.onChangeSearchInput}
+          actionButtonText="New Order"
+          searchPlaceholder="Search for fish..."
+        />
 
-        <table className="table">
+        <table className="table fish-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th style={{ textAlign: "center" }}>Photo</th>
-              <th
-                style={{
-                  verticalAlign: "middle",
-                  textAlign: "right",
-                  width: "160px"
-                }}
-              >
-                Stock (kg)
-              </th>
-
-              <th
-                style={{
-                  verticalAlign: "middle",
-                  textAlign: "right",
-                  width: "160px"
-                }}
-              >
-                Latest Price ($)
-              </th>
-
-              <th />
+              <th className="main-column">Name</th>
+              <th className="image-column">Photo</th>
+              <th className="info-column">Stock (kg)</th>
+              <th className="info-column">Latest Price ($)</th>
+              <th className="action-column" />
             </tr>
           </thead>
           <tbody>{this.renderRows(this.props.stock)}</tbody>
@@ -199,22 +240,18 @@ class FishMarketPage extends React.Component<Props, IState> {
             </div>
           }
           title="Add New Order"
-          onHide={() => {
-            if (this.orderEditorAdd) {
-              this.orderEditorAdd.emptyForm();
-            }
-          }}
         >
           <OrderEditor
             ref={x => (this.orderEditorAdd = x)}
-            data={{} as IOrderModel}
+            data={this.state.editingOrder as IOrderModel}
+            stocks={this.props.stock}
             species={this.props.species}
           />
         </ModalComponent>
 
         <PagingBar
           ref={x => (this.pagingBar = x)}
-          totalResults={this.props.stock.length}
+          totalResults={this.props.totalCount}
           limitPerPage={this.state.limitPerPage}
           currentPage={this.state.pageNum}
           onChangePage={this.onChangePage}
@@ -224,60 +261,8 @@ class FishMarketPage extends React.Component<Props, IState> {
   }
 }
 
-const StockRow = ({ stock }: { stock: IStockModel }) => {
-  return (
-    <tr>
-      <td style={{ verticalAlign: "middle" }}>
-        <b>{stock.specie.name}</b>
-      </td>
-      <td style={{ textAlign: "center" }}>
-        <img height="100px" src={stock.specie.imageSrc} />
-      </td>
-      <td
-        style={{
-          verticalAlign: "middle",
-          textAlign: "right",
-          width: "100px"
-        }}
-      >
-        {stock.quantity.toLocaleString()}
-      </td>
-
-      <td
-        style={{
-          verticalAlign: "middle",
-          textAlign: "right",
-          width: "100px"
-        }}
-      >
-        {stock.latestPrice.toLocaleString()}
-      </td>
-      <td
-        style={{
-          verticalAlign: "middle",
-          textAlign: "right"
-        }}
-      >
-        <button
-          className="btn btn-primary"
-          onClick={e => this.onClickShowEditModal(e, stock)}
-        >
-          Buy
-        </button>&nbsp;
-        <button
-          className="btn btn-default"
-          onClick={e => this.onClickShowDeleteModal(e, stock)}
-        >
-          Sell
-        </button>
-      </td>
-    </tr>
-  );
-};
-
-const component = connect(
-  (state: ApplicationState) => state.fishMarket,
-  FishStore.actionsCreators
-)(FishMarketPage as any);
+const component = connect((state: ApplicationState) => state.fishMarket, {
+  ...FishStore.actionsCreators
+})(FishMarketPage as any);
 
 export default (withRouter(component as any) as any) as typeof FishMarketPage;

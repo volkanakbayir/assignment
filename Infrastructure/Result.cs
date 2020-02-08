@@ -8,7 +8,6 @@ namespace FishMarket.Infrastructure
     {
         public List<string> Errors { get; set; } = new List<string>();
 
-        [JsonIgnore]
         public bool HasErrors => Errors != null && Errors.Any();
 
         public Result()

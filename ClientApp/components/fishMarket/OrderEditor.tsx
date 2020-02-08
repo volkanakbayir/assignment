@@ -2,14 +2,16 @@ import * as React from "react";
 import bind from "bind-decorator";
 import { Form } from "@Components/shared/Form";
 import { Formik } from "formik";
-import { IBuyOrderModel } from "../../models/IBuyOrderModel";
-import { ISellOrderModel } from "../../models/ISellOrderModel";
-import { ISpecieModel } from "../../models/ISpecieModel";
-import { IOrderModel } from "../../models/IOrderModel";
+import { IBuyOrderModel } from "@Models/IBuyOrderModel";
+import { ISellOrderModel } from "@Models/ISellOrderModel";
+import { ISpecieModel } from "@Models/ISpecieModel";
+import { IOrderModel } from "@Models/IOrderModel";
+import { IStockModel } from "@Models/IStockModel";
 
 export interface IProps {
   data: IOrderModel;
   species: ISpecieModel[];
+  stocks: IStockModel[];
 }
 
 export default class OrderEditor extends React.Component<IProps, {}> {
